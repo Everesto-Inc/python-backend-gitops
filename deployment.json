@@ -1,4 +1,5 @@
 {
+  "nsKey": "python",
   "port": 8080,
   "memoryMi": 192,
   "replicas": 1,

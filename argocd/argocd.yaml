@@ -10,8 +10,8 @@ spec:
   sourceRepos:
     - https://github.com/Everesto-Inc/*-gitops.git
   destinations:
-    - { server: https://kubernetes.default.svc, namespace: dev-orchid }
-    - { server: https://kubernetes.default.svc, namespace: prod-orchid }
+    - { server: https://kubernetes.default.svc, namespace: dev-python }
+    - { server: https://kubernetes.default.svc, namespace: prod-python }
   clusterResourceWhitelist:
     - { group: '', kind: Namespace }
   namespaceResourceWhitelist:
@@ -30,7 +30,7 @@ spec:
     repoURL: https://github.com/Everesto-Inc/python-backend-gitops.git
     targetRevision: main
     path: apps/dev
-  destination: { server: https://kubernetes.default.svc, namespace: dev-orchid }
+  destination: { server: https://kubernetes.default.svc, namespace: dev-python }
   syncPolicy:
     # MANUAL sync: after "Deploy" / "Promote" click Sync in ArgoCD
     syncOptions: [CreateNamespace=true]
