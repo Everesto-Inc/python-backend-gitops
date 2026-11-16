@@ -4,4 +4,4 @@ namespace: orchid-dev
 resources: [namespace.yaml, deployment.yaml, service.yaml, externalsecret.yaml, rolebinding-backstage.yaml]
 images:
   - name: ghcr.io/everesto-inc/python-backend
-    newTag: sha-5a980cb   # changed by "Deploy" in Backstage — then Sync in ArgoCD
+    newTag: sha-38c00c4   # changed by "Deploy" in Backstage — then Sync in ArgoCD
