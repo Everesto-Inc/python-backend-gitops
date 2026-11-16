@@ -1,0 +1,11 @@
+{
+  "port": 8080,
+  "memoryMi": 192,
+  "replicas": 1,
+  "healthPath": "/health",
+  "publicUrl": false,
+  "config": [],
+  "secrets": [
+    "DATABASE_URL"
+  ]
+}

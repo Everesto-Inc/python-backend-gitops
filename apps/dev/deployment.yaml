@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: python-backend
+  labels: { app: python-backend, everesto.live/project: orchid, everesto.live/env: dev }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: python-backend } }
+  template:
+    metadata:
+      labels: { app: python-backend, everesto.live/project: orchid, everesto.live/env: dev }
+    spec:
+      nodeSelector: { everesto.live/pool: tenants }
+      securityContext: { runAsNonRoot: true, seccompProfile: { type: RuntimeDefault } }
+      containers:
+        - name: app
+          image: ghcr.io/everesto-inc/python-backend
+          ports: [{ containerPort: 8080 }]
+          envFrom:
+            - secretRef: { name: python-backend }   # secrets: Infisical python-backend-gitops / dev (via ESO)
+          resources:
+            requests: { cpu: 25m, memory: 96Mi }
+            limits: { memory: 192Mi }
+          readinessProbe: { httpGet: { path: /health, port: 8080 }, periodSeconds: 10 }
+          livenessProbe: { httpGet: { path: /health, port: 8080 }, initialDelaySeconds: 20, periodSeconds: 20, failureThreshold: 3 }
+          securityContext: { allowPrivilegeEscalation: false, capabilities: { drop: [ALL] } }

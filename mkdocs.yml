@@ -1,0 +1,3 @@
+site_name: python-backend-gitops
+nav: [{ Runbook: index.md }]
+plugins: [techdocs-core]

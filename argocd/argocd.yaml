@@ -1,0 +1,36 @@
+# Apply on the control plane (Backstage has no cluster access):
+#   sudo kubectl apply -f https://raw.githubusercontent.com/Everesto-Inc/python-backend-gitops/main/argocd/argocd.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: orchid
+  namespace: argocd
+spec:
+  description: DevOps space orchid
+  sourceRepos:
+    - https://github.com/Everesto-Inc/*-gitops.git
+  destinations:
+    - { server: https://kubernetes.default.svc, namespace: orchid-dev }
+    - { server: https://kubernetes.default.svc, namespace: orchid-prod }
+  clusterResourceWhitelist:
+    - { group: '', kind: Namespace }
+  namespaceResourceWhitelist:
+    - { group: '*', kind: '*' }
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: python-backend-dev
+  namespace: argocd
+  labels: { everesto.live/project: orchid, everesto.live/env: dev }
+  finalizers: [resources-finalizer.argocd.argoproj.io]   # deleting the app removes its pods too
+spec:
+  project: orchid
+  source:
+    repoURL: https://github.com/Everesto-Inc/python-backend-gitops.git
+    targetRevision: main
+    path: apps/dev
+  destination: { server: https://kubernetes.default.svc, namespace: orchid-dev }
+  syncPolicy:
+    # MANUAL sync: after "Deploy" / "Promote" click Sync in ArgoCD
+    syncOptions: [CreateNamespace=true]
