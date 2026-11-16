@@ -18,18 +18,18 @@ flowchart TB
     IP[(env prod)]
   end
   subgraph argo[ns argocd]
-    AD[Application python-backend-dev]
-    AP[Application python-backend-prod]
+    AD[Application dev-python-backend]
+    AP[Application prod-python-backend]
   end
   subgraph es[ns external-secrets]
     L[Secret infisical-python-backend-auth]
   end
-  SD{{ClusterSecretStore python-backend-dev}}
-  SP{{ClusterSecretStore python-backend-prod}}
-  subgraph nd[ns orchid-dev]
+  SD{{ClusterSecretStore dev-python-backend}}
+  SP{{ClusterSecretStore prod-python-backend}}
+  subgraph nd[ns dev-orchid]
     PD[pod python-backend]
   end
-  subgraph np[ns orchid-prod]
+  subgraph np[ns prod-orchid]
     PP[pod python-backend]
   end
   A -. kubectl apply .-> AD & AP & SD & SP
@@ -45,13 +45,13 @@ flowchart TB
 | `infisical-python-backend-auth` | Secret (Infisical login) | external-secrets | you — step 2 |
 | `infisical-python-backend-dev` / `-prod` | ClusterSecretStore | — (cluster-wide) | you — steps 3 / 7 |
 | `orchid` | AppProject | argocd | you — step 4 |
-| `python-backend-dev` / `python-backend-prod` | Application | argocd | you — steps 4 / 7 |
-| `orchid-dev` / `orchid-prod` | Namespace | — | ArgoCD on Sync |
-| `python-backend` | Deployment, Service, ExternalSecret | orchid-dev / orchid-prod | ArgoCD on Sync |
-| `python-backend` | Secret (the app's secrets) | orchid-dev / orchid-prod | ESO, from Infisical |
+| `dev-python-backend` / `prod-python-backend` | Application | argocd | you — steps 4 / 7 |
+| `dev-orchid` / `prod-orchid` | Namespace | — | ArgoCD on Sync |
+| `python-backend` | Deployment, Service, ExternalSecret | dev-orchid / prod-orchid | ArgoCD on Sync |
+| `python-backend` | Secret (the app's secrets) | dev-orchid / prod-orchid | ESO, from Infisical |
 
 Why the files have no `namespace:` line: it is set once per folder in `apps/<env>/kustomization.yaml`
-(`namespace: orchid-dev` / `orchid-prod`) and in each Application's `destination`.
+(`namespace: dev-orchid` / `prod-orchid`) and in each Application's `destination`.
 
 ## Once (per cluster / per app)
 
@@ -88,88 +88,88 @@ The login ESO uses to READ the Infisical project python-backend-gitops (dev and 
 sudo kubectl apply -f https://raw.githubusercontent.com/Everesto-Inc/python-backend-gitops/main/argocd/secret-stores.yaml
 ```
 
-Tells ESO where dev secrets come from: Infisical project python-backend-gitops, environment dev, path /, using the login of step 2. Its condition allows ONLY namespace orchid-dev to use it.
+Tells ESO where dev secrets come from: Infisical project python-backend-gitops, environment dev, path /, using the login of step 2. Its condition allows ONLY namespace dev-orchid to use it.
 
 **Creates:**
 
 - ClusterSecretStore infisical-python-backend-dev (cluster-wide)
 
-### 4. ArgoCD project orchid + application python-backend-dev
+### 4. ArgoCD project orchid + application dev-python-backend
 
 ```bash
 sudo kubectl apply -f https://raw.githubusercontent.com/Everesto-Inc/python-backend-gitops/main/argocd/argocd.yaml
 ```
 
-AppProject orchid = guard rails: only *-gitops repos, only namespaces orchid-dev / orchid-prod. Application python-backend-dev = an instruction to ArgoCD: "take folder apps/dev of python-backend-gitops and put it into orchid-dev, sync manually". It creates no pods yet — it appears as a tile in ArgoCD.
+AppProject orchid = guard rails: only *-gitops repos, only namespaces dev-orchid / prod-orchid. Application dev-python-backend = an instruction to ArgoCD: "take folder apps/dev of python-backend-gitops and put it into dev-orchid, sync manually". It creates no pods yet — it appears as a tile in ArgoCD.
 
 **Creates:**
 
 - AppProject orchid (ns argocd)
-- Application python-backend-dev (ns argocd)
+- Application dev-python-backend (ns argocd)
 
-### 5. Sync python-backend-dev (or ArgoCD UI → Sync)
+### 5. Sync dev-python-backend (or ArgoCD UI → Sync)
 
 ```bash
-sudo kubectl -n argocd patch application python-backend-dev --type merge -p '{"operation":{"sync":{}}}'
+sudo kubectl -n argocd patch application dev-python-backend --type merge -p '{"operation":{"sync":{}}}'
 ```
 
 ArgoCD applies everything in apps/dev: the namespace first, then Deployment (image + tag, port, /health probes, memory), Service (port 80 → container port) and ExternalSecret. ESO sees the ExternalSecret and creates Secret python-backend from Infisical dev; the pod gets every key as an environment variable. Run again after every "Deploy to dev".
 
 **Creates:**
 
-- Namespace orchid-dev
-- Deployment + pod python-backend (ns orchid-dev)
-- Service python-backend (ns orchid-dev)
-- ExternalSecret python-backend (ns orchid-dev)
-- Secret python-backend (ns orchid-dev, created by ESO)
-- RoleBinding backstage-read-python-backend (ns orchid-dev: Backstage may READ this namespace — CD tab)
+- Namespace dev-orchid
+- Deployment + pod python-backend (ns dev-orchid)
+- Service python-backend (ns dev-orchid)
+- ExternalSecret python-backend (ns dev-orchid)
+- Secret python-backend (ns dev-orchid, created by ESO)
+- RoleBinding backstage-read-python-backend (ns dev-orchid: Backstage may READ this namespace — CD tab)
 
 ### 6. Check dev
 
 ```bash
-sudo kubectl -n argocd get application python-backend-dev
-sudo kubectl -n orchid-dev get pods,externalsecret,secret
+sudo kubectl -n argocd get application dev-python-backend
+sudo kubectl -n dev-orchid get pods,externalsecret,secret
 ```
 
 Application Synced/Healthy, pod Running, ExternalSecret SecretSynced, Secret present.
 
 ## Prod
 
-### 7. Prod secret store + application python-backend-prod — only after the first "Promote to prod" PR is merged (not done yet)
+### 7. Prod secret store + application prod-python-backend — only after the first "Promote to prod" PR is merged (not done yet)
 
 ```bash
 sudo kubectl apply -f https://raw.githubusercontent.com/Everesto-Inc/python-backend-gitops/main/argocd/argocd-prod.yaml
 ```
 
-Same as steps 3 + 4 for prod: the store reads Infisical environment prod and only namespace orchid-prod may use it; the Application takes apps/prod into orchid-prod. The file exists only after the first promote PR is merged (404 before). Set the real prod secrets in the Secrets tab before syncing.
+Same as steps 3 + 4 for prod: the store reads Infisical environment prod and only namespace prod-orchid may use it; the Application takes apps/prod into prod-orchid. The file exists only after the first promote PR is merged (404 before). Set the real prod secrets in the Secrets tab before syncing.
 
 **Creates:**
 
 - ClusterSecretStore infisical-python-backend-prod (cluster-wide)
-- Application python-backend-prod (ns argocd)
+- Application prod-python-backend (ns argocd)
 
-### 8. Sync python-backend-prod (or ArgoCD UI → Sync)
+### 8. Sync prod-python-backend (or ArgoCD UI → Sync)
 
 ```bash
-sudo kubectl -n argocd patch application python-backend-prod --type merge -p '{"operation":{"sync":{}}}'
+sudo kubectl -n argocd patch application prod-python-backend --type merge -p '{"operation":{"sync":{}}}'
 ```
 
 Like step 5, for prod. Run again after every merged "Promote to prod" PR.
 
 **Creates:**
 
-- Namespace orchid-prod
-- Deployment + pod python-backend (ns orchid-prod)
-- Service python-backend (ns orchid-prod)
-- ExternalSecret python-backend (ns orchid-prod)
-- Secret python-backend (ns orchid-prod, created by ESO)
-- RoleBinding backstage-read-python-backend (ns orchid-prod: Backstage may READ this namespace — CD tab)
+- Namespace prod-orchid
+- Deployment + pod python-backend (ns prod-orchid)
+- Service python-backend (ns prod-orchid)
+- ExternalSecret python-backend (ns prod-orchid)
+- Secret python-backend (ns prod-orchid, created by ESO)
+- RoleBinding backstage-read-python-backend (ns prod-orchid: Backstage may READ this namespace — CD tab)
 
 ### 9. Check prod
 
 ```bash
-sudo kubectl -n argocd get application python-backend-prod
-sudo kubectl -n orchid-prod get pods,externalsecret,secret
+sudo kubectl -n argocd get application prod-python-backend
+sudo kubectl -n prod-orchid get pods,externalsecret,secret
 ```
 
 Application Synced/Healthy, pod Running, ExternalSecret SecretSynced, Secret present.
@@ -184,16 +184,16 @@ Application Synced/Healthy, pod Running, ExternalSecret SecretSynced, Secret pre
 | change a secret | Backstage → python-backend-gitops → **Secrets** → dev/prod (prod: maintainers/owners) → then: |
 
 ```bash
-# apply a changed secret now (dev; use orchid-prod for prod) — only when the app already runs there
-sudo kubectl -n orchid-dev annotate externalsecret python-backend force-sync=$(date +%s) --overwrite
-sudo kubectl -n orchid-dev rollout restart deployment python-backend
+# apply a changed secret now (dev; use prod-orchid for prod) — only when the app already runs there
+sudo kubectl -n dev-orchid annotate externalsecret python-backend force-sync=$(date +%s) --overwrite
+sudo kubectl -n dev-orchid rollout restart deployment python-backend
 ```
 
 ## Troubleshooting
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `namespaces "orchid-prod" not found` | prod not synced yet | steps 7 + 8 |
+| `namespaces "prod-orchid" not found` | prod not synced yet | steps 7 + 8 |
 | `argocd-prod.yaml` → 404 | first promote PR not merged yet (or GitHub cache, ~5 min) | merge the PR, wait |
 | pod `Pending` | node label missing | step 1 |
 | ExternalSecret `SecretSyncedError` | login secret missing/wrong, or store missing | step 2 ("New ESO login"), steps 3 / 7 |

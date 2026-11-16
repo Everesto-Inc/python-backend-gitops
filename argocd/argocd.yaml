@@ -10,8 +10,8 @@ spec:
   sourceRepos:
     - https://github.com/Everesto-Inc/*-gitops.git
   destinations:
-    - { server: https://kubernetes.default.svc, namespace: orchid-dev }
-    - { server: https://kubernetes.default.svc, namespace: orchid-prod }
+    - { server: https://kubernetes.default.svc, namespace: dev-orchid }
+    - { server: https://kubernetes.default.svc, namespace: prod-orchid }
   clusterResourceWhitelist:
     - { group: '', kind: Namespace }
   namespaceResourceWhitelist:
@@ -20,7 +20,7 @@ spec:
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: python-backend-dev
+  name: dev-python-backend
   namespace: argocd
   labels: { everesto.live/project: orchid, everesto.live/env: dev }
   finalizers: [resources-finalizer.argocd.argoproj.io]   # deleting the app removes its pods too
@@ -30,7 +30,7 @@ spec:
     repoURL: https://github.com/Everesto-Inc/python-backend-gitops.git
     targetRevision: main
     path: apps/dev
-  destination: { server: https://kubernetes.default.svc, namespace: orchid-dev }
+  destination: { server: https://kubernetes.default.svc, namespace: dev-orchid }
   syncPolicy:
     # MANUAL sync: after "Deploy" / "Promote" click Sync in ArgoCD
     syncOptions: [CreateNamespace=true]
