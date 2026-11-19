@@ -1,0 +1,6 @@
+# Managed by Backstage (access sync) — do not edit: changes here are overwritten.
+# main needs 1 approval; for the paths below it must come from these teams.
+*                    @Everesto-Inc/orchid-maintainers @Everesto-Inc/orchid-managers
+/apps/prod/          @Everesto-Inc/orchid-managers
+/argocd/argocd-prod.yaml @Everesto-Inc/orchid-managers
+/.github/            @Everesto-Inc/orchid-managers
