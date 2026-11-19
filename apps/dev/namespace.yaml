@@ -1,8 +1,0 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: dev-python
-  labels: { everesto.live/project: orchid, everesto.live/env: dev }
-  annotations:
-    # shared by every app of orchid: deleting ONE app must never delete the namespace
-    argocd.argoproj.io/sync-options: Delete=false
